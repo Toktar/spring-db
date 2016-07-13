@@ -20,16 +20,17 @@ import java.util.stream.Collectors;
 /**
  * Created by toktar on 11.07.2016.
  */
-public class JdbsDao {
+public class JdbcDao {
     private static String tableName = "contacts", name = "name", email = "email", phone = "phone";
 
-   // @Autowired
-   static public JdbcTemplate jdbcTemplate;
+    // @Autowired
+    static public JdbcTemplate jdbcTemplate;
 
     public void JdbsDao() {
         createTable();
     }
-    public void createTable() {
+
+    static public void createTable() {
         jdbcTemplate.execute("DROP TABLE " + tableName + " IF EXISTS");
         StringBuffer query = new StringBuffer("CREATE TABLE " + tableName + "(" +
                 "id SERIAL");
@@ -38,41 +39,44 @@ public class JdbsDao {
         for (String name : colomnsName) {
             query.append(", " + name + " VARCHAR(255)");
         }
-
+        query.append(")");
         jdbcTemplate.execute(query.toString());
     }
 
     public long addElement(Contact element) {
-        List<Map<String, Object>> elementInDB = getByNaturKey(element);
-        if(elementInDB.size() != 0) {
+        /*List<Map<String, Object>> elementInDB = getByNaturKey(element);
+        if (elementInDB.size() != 0) {
             System.out.println("Element already exits");
-           // return Long.parseLong(elementInDB.iterator().next().remove("id").toString());
+            // return Long.parseLong(elementInDB.iterator().next().remove("id").toString());
             return 0;
-        }
+        }*/
         List<Object[]> elementInList = element.toList();
-        jdbcTemplate.batchUpdate("INSERT INTO " + tableName + "("+name + ", " + email + ", " + phone + ") VALUES (?,?,?)", elementInList);
-        return Long.parseLong(getByNaturKey(element).iterator().next().remove("id").toString());
+       jdbcTemplate.batchUpdate("INSERT INTO " + tableName + "(" + name + ", " + email + ", " + phone + ") VALUES (?,?,?)", elementInList);
+     //   return Long.parseLong(getByNaturKey(element).iterator().next().remove("id").toString());
+        return 0;
     }
 
     public List<Map<String, Object>> getByNaturKey(Contact element) {
         List<Map<String, Object>> resultList = new ArrayList<>();
         StringBuffer query = new StringBuffer("SELECT * FROM " + tableName + " WHERE ");
-        query.append(name + " = \"" + element.getName() +"\"");
-        query.append(", " + email + " = \"" + element.getEmail() +"\"");
-        query.append(", " + phone + " = \"" + element.getPhone() +"\"");
+        query.append(name + " = \"" + element.getName() + "\"");
+        query.append(" AND " + email + " = \"" + element.getEmail() + "\"");
+        query.append(" AND " + phone + " = \"" + element.getPhone() + "\"");
         try {
             resultList = jdbcTemplate.queryForList(query.toString());
         } catch (NullPointerException e) {
-           // e.printStackTrace();
+            // e.printStackTrace();
         }
-        return  resultList;
+        return resultList;
 
     }
+
     public void deleteElement(long id) {
         jdbcTemplate.batchUpdate("DELETE FROM " + tableName + " WHERE id = " + id);
     }
-    public List<Map<String,Object>> getList() {
-        List<Map<String,Object>> elementsList = jdbcTemplate.queryForList("SELECT * FROM " + tableName);
-        return  elementsList;
+
+    public List<Map<String, Object>> getList() {
+        List<Map<String, Object>> elementsList = jdbcTemplate.queryForList("SELECT * FROM " + tableName);
+        return elementsList;
     }
 }
