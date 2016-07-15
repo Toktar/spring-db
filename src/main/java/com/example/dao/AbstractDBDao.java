@@ -1,9 +1,12 @@
 package com.example.dao;
 
+import com.example.Contact;
+import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by toktar on 08.07.2016.
@@ -11,11 +14,9 @@ import java.io.IOException;
 
 public abstract class AbstractDBDao {
 
-    public abstract File[] getFileList(String path, String mask) throws IOException;
+    public abstract void deleteElement(Contact contact);
+    public abstract void addElement(Contact contact);
+    public abstract List<Contact> getList();
 
-    public abstract boolean addElement(Document element, String path);
 
-    public abstract boolean deleteElement(String path);
-
-    public abstract Document getElement(File file);
 }

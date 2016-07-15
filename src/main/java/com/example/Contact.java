@@ -1,5 +1,6 @@
 package com.example;
 
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -9,10 +10,22 @@ import java.util.stream.Collectors;
  * Created by toktar on 12.07.2016.
  */
 
+@Entity
+@Table(name = "Contacts")
 public class Contact {
+    @Id
+    @Column(name = "id")
+    @GeneratedValue
     private long id;
+
+    @Column(name = "name")
     private String name;
+
+    @Column(name = "email")
     private String email;
+
+    @Column(name = "phone")
+    private String phone;
 
     public String getPhone() {
         return phone;
@@ -46,7 +59,7 @@ public class Contact {
         this.id = id;
     }
 
-    private String phone;
+
 
     public Contact(long id, String name, String email, String phone) {
         this.id = id;

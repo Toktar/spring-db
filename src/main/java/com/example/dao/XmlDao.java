@@ -1,6 +1,7 @@
 package com.example.dao;
 
 
+import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -17,9 +18,8 @@ import java.io.IOException;
  * Created by toktar on 08.07.2016.
  */
 
-
-public class XmlDao extends AbstractDao {
-    @Override
+@Service
+public class XmlDao {
     public File[] getFileList(String path, String mask) throws IOException {
         File f = new File(path); // current directory
 
@@ -38,7 +38,6 @@ public class XmlDao extends AbstractDao {
         return files;
     }
 
-    @Override
     public boolean addElement(Document element, String path) {
         try {
             TransformerFactory transformerFactory =
@@ -62,13 +61,11 @@ public class XmlDao extends AbstractDao {
 
     }
 
-    @Override
     public boolean deleteElement(String path) {
         File contact = new File(path);
         return contact.delete();
     }
 
-    @Override
     public Document getElement(File file) {
         Document doc = null;
         try {
@@ -84,4 +81,4 @@ public class XmlDao extends AbstractDao {
     }
 
 
-    }
+}

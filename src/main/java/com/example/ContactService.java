@@ -1,8 +1,16 @@
 package com.example;
 
-import com.example.dao.JdbsDao;
+import com.example.dao.AbstractDBDao;
+import com.example.dao.HibernateDao;
+import com.example.dao.JdbcDao;
 import com.example.dao.XmlDao;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -14,14 +22,24 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Created by toktar on 08.07.2016.
  */
-@Component
+
+
+@Service("contactService")
+//@Transactional
 public class ContactService {
+    List<Contact> contactList;
+
+    enum DBType {JDBC, Hibernate}
+
     private HashMap<Long, Contact> contactMap;
+    protected static Logger logger = Logger.getLogger("service");
 
     public void setXmlDao(XmlDao xmlDao) {
         this.xmlDao = xmlDao;
@@ -29,15 +47,40 @@ public class ContactService {
 
     //@Autowired
     //@Qualifier("xml")
-    private XmlDao xmlDao = new XmlDao();
-    private JdbsDao jdbsDao = new JdbsDao();
+
+    @Autowired
+    private XmlDao xmlDao;
+
+    @Autowired
+    private JdbcDao jdbcDao;
+
+    @Autowired
+    private HibernateDao hibernateDao = new HibernateDao();
+
+    public void setDbDao(DBType type) {
+        if (type == DBType.Hibernate)
+            dbDao = hibernateDao;
+        else
+            dbDao = jdbcDao;
+    }
+
+    @Autowired
+    @Qualifier("jdbcDao")
+    private AbstractDBDao dbDao;
+
 
     public boolean deleteContactXml(Contact contact) {
-        return  contact.getId() != 0 && xmlDao.deleteElement("./" + contact.getId()+ "_contact.xml");
+        return contact.getId() != 0 && xmlDao.deleteElement("./" + contact.getId() + "_contact.xml");
     }
-    public boolean deleteContactDB(Contact contact) {
-        jdbsDao.deleteElement(contact.getId());
-        return true;
+
+    public boolean deleteContactDB(long id) {
+        updateContactsList();
+        Contact contact = getContactById(id);
+        if (contact != null) {
+            dbDao.deleteElement(contact);
+            return true;
+        }
+        return false;
     }
 
     public boolean addContactXml(Contact contact) {
@@ -83,20 +126,23 @@ public class ContactService {
 
 
             // write the content into xml file
-            operationResult = xmlDao.addElement(doc, "./"+contact.getId()+"_contact.xml");
+            operationResult = xmlDao.addElement(doc, "./" + contact.getId() + "_contact.xml");
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
 
-
-        return  operationResult;
+        return operationResult;
     }
+
     public boolean addContactDB(Contact contact) {
-        long id = jdbsDao.addElement(contact);
-        contact.setId(id);
-        return id!=0;
+        updateContactsList();
+        if (contact != null && !contactList.contains(contact)) {
+            dbDao.addElement(contact);
+            return true;
+        }
+        return false;
     }
 
     public HashMap<Long, Contact> getContactMap() throws ParserConfigurationException, IOException {
@@ -110,11 +156,11 @@ public class ContactService {
         f.setValidating(false);
         DocumentBuilder builder = f.newDocumentBuilder();
 
-        File[] files = xmlDao.getFileList(".","_contact.xml");
+        File[] files = xmlDao.getFileList(".", "_contact.xml");
         for (File file : files) {
             if (!file.isDirectory()) {
                 Contact contact = getContactFromXml(file);
-                if(contact.getId() == 0) continue;
+                if (contact.getId() == 0) continue;
                 contactMap.put(contact.getId(), contact);
             }
 
@@ -124,17 +170,13 @@ public class ContactService {
         return contactMap;
 
     }
-    public HashMap<Long,Contact> getContactMapDB() {
-        HashMap<Long, Contact> contactMap = new HashMap<Long, Contact>();
-        for (Map<String, Object> element : jdbsDao.getList()) {
-            Contact contact = new  Contact();
-            contact.setId(Long.parseLong(element.get("id").toString()));
-            contact.setName(element.get("name").toString());
-            contact.setEmail(element.get("email").toString());
-            contact.setPhone(element.get("phone").toString());
-            contactMap.put(Long.parseLong(element.get("id").toString()), contact);
-        }
-        return contactMap;
+
+    public List<Contact> getListDB() {
+        return dbDao.getList();
+    }
+
+    public void updateContactsList() {
+        contactList = getListDB();
     }
 
 
@@ -179,6 +221,13 @@ public class ContactService {
         return new Contact(id, name, email, phone);
     }
 
+    public Contact getContactById(long id) {
+        for (Contact contact : contactList) {
+            if (contact.getId() == id) return contact;
+        }
+
+        return null;
+    }
 
 
 }
